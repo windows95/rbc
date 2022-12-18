@@ -63,7 +63,7 @@ class Api {
 
   public function lastDate(): void {
     try {
-      $fetcher = new SoapFetcher();
+      $fetcher = AbsDataFetcher::init(AbsDataFetcher::SOAP);
       $this->response(['date' => $fetcher->getLatestDate()->format('d.m.Y')]);
     } catch (Throwable $e) {
       $this->response([], 500);
@@ -74,18 +74,14 @@ class Api {
     try {
       [$date, $code, $base] = $this->validate();
 
-      $rate = $this->getRate($code, $date);
-      if ($rate === NULL) {
-        throw new InvalidArgumentException('Нет данных для выбранной даты');
-      }
-
       $prevDate = clone($date);
       $prevDate->modify('-1 day');
 
-      $prevRate = $this->getRate($code, $prevDate);
-
-      $this->response(['rate' => $rate, 'prev' => $prevRate]);
-    } catch (InvalidArgumentException $e) {
+      $this->response([
+        'rate' => $this->getRateForDate($code, $date, $base),
+        'prevRate' => $this->getRateForDate($code, $prevDate, $base)
+      ]);
+    } catch (LogicException|InvalidArgumentException $e) {
       $this->response(['error' => $e->getMessage(), 400]);
     } catch (Throwable $e) {
       $this->response([], 500);
@@ -95,10 +91,33 @@ class Api {
   /**
    * @param string $code
    * @param DateTime $date
+   * @param string|NULL $base
+   * @return string
+   * @throws LogicException
+   */
+  protected function getRateForDate(string $code, DateTime $date, ?string $base): string {
+    $rate = $this->getRate($code, $date);
+    if ($rate === NULL) {
+      throw new LogicException('Нет данных для выбранной даты');
+    }
+
+    if ($base !== NULL) {
+      $baseRate = $this->getRate($base, $date);
+      if ($baseRate === NULL) {
+        throw new LogicException('Нет данных для выбранной даты');
+      }
+      $rate = bcdiv($baseRate, $rate, 2);
+    }
+    return $rate;
+  }
+
+  /**
+   * @param string $code
+   * @param DateTime $date
    * @return string|NULL
    */
   protected function getRate(string $code, DateTime $date): ?string {
-    $fetcher = new SoapFetcher();
+    $fetcher = AbsDataFetcher::init(AbsDataFetcher::SOAP);
     if ($date > $fetcher->getLatestDate()) {
       return NULL;
     }
