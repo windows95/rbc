@@ -8,21 +8,21 @@ header('Access-Control-Allow-Methods: GET');
 
 $request = parse_url($_SERVER['REQUEST_URI'], PHP_URL_QUERY);
 $action = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
-$method = strtolower($_SERVER['REQUEST_METHOD']);
+$method = strtoupper($_SERVER['REQUEST_METHOD']);
 
 try {
-  if ($method !== 'get') {
+  if ($method !== 'GET') {
     throw new InvalidArgumentException('Разрешен только метод GET');
   }
   if (!in_array($action, ['last-date', 'rate', 'codes'])) {
     throw new InvalidArgumentException('Несуществующий метод API');
   }
-  if ($request === NULL) {
-    throw new InvalidArgumentException('Должны быть указаны обязательные параметры: date, code');
-  }
 
-  $params = [];
-  parse_str($request, $params);
+  if ($request === NULL) {
+    $params = [];
+  } else {
+    parse_str($request, $params);
+  }
 
   $api = new Api($params);
   switch ($action) {

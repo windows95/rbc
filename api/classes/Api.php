@@ -43,13 +43,11 @@ class Api {
       }
     }
 
-    $code = $this->params['code'];
     $date = DateTime::createFromFormat('Y-m-d', $this->params['date']);
-
     if ($date === FALSE) {
       throw new InvalidArgumentException('Формат даты: YYY-MM-DD');
     }
-    return [$date, $code, $base];
+    return [$date, $this->params['code'], $base];
   }
 
   public function codes(): void {
@@ -57,7 +55,7 @@ class Api {
       $storage = new Storage();
       $this->response($storage->getCodes());
     } catch (Throwable $e) {
-      $this->response([], 500);
+      $this->response(['error' => 'Ошибка при обработке запроса'], 500);
     }
   }
 
@@ -66,12 +64,16 @@ class Api {
       $fetcher = AbsDataFetcher::init(AbsDataFetcher::SOAP);
       $this->response(['date' => $fetcher->getLatestDate()->format('d.m.Y')]);
     } catch (Throwable $e) {
-      $this->response([], 500);
+      $this->response(['error' => 'Ошибка при обработке запроса'], 500);
     }
   }
 
   public function rate(): void {
     try {
+      if (!array_key_exists('date', $this->params) || !array_key_exists('code', $this->params)) {
+        throw new InvalidArgumentException('Должны быть указаны обязательные параметры: date, code');
+      }
+
       [$date, $code, $base] = $this->validate();
 
       $prevDate = clone($date);
@@ -84,7 +86,7 @@ class Api {
     } catch (LogicException|InvalidArgumentException $e) {
       $this->response(['error' => $e->getMessage(), 400]);
     } catch (Throwable $e) {
-      $this->response([], 500);
+      $this->response(['error' => 'Ошибка при обработке запроса'], 500);
     }
   }
 

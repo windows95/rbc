@@ -4,10 +4,12 @@ class Storage {
   protected PDO $connection;
 
   public function __construct() {
-    $host = 'mysql-rbc';
-    $db   = 'currency';
-    $user = 'rbc';
-    $pass = '123';
+    $config = Settings::get('db');
+
+    $host = $config['host'];
+    $db = $config['database'];
+    $user = $config['user'];
+    $pass = $config['pass'];
 
     $dsn = "mysql:host=$host;dbname=$db;charset=utf8mb4";
 

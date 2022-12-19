@@ -7,6 +7,7 @@ services:
     restart: always 
     volumes:
       - ./api:/var/www/api
+      - ./api/settings.php:/var/www/api/settings.php
     depends_on:
       - mysql
 
